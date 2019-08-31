@@ -1,5 +1,5 @@
 <template>
-  <Room room_id="adf" />
+  <Room v-bind:room_id="this.$router.roomId" />
 </template>
 
 <script>

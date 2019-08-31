@@ -81,7 +81,7 @@ export default {
               case "moveRoom":
                 _this.$router.push({
                   name: "room",
-                  params: { roomId: data.room_id }
+                  params: { room_id: data.room_id }
                 });
                 break;
               default:

@@ -10,6 +10,7 @@
   "dependencies": {
     "actioncable": "^5.2.3",
     "core-js": "^2.6.5",
+    "loaders.css": "^0.1.2",
     "register-service-worker": "^1.6.2",
     "stylus": "^0.54.7",
     "stylus-loader": "^3.0.2",

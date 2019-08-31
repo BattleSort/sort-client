@@ -13,11 +13,21 @@
     </div>
     <div v-bind:class="{ hide: beforeSelect }">
       <p>マッチング中</p>
+      <div class="loader">
+        <div class="line-scale-pulse-out-rapid">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import "loaders.css";
 import ActionCable from "actioncable";
 const createConsumer = ActionCable.createConsumer("ws://localhost:3001/cable");
 
@@ -103,6 +113,10 @@ export default {
     vertical-align middle
 .sortable-chosen
   background-color red
+
+.line-scale-pulse-out-rapid > div
+  background-color green
+
 .hide
   display none
 </style>

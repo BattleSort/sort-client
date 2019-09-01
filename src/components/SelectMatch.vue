@@ -3,9 +3,9 @@
     <div v-bind:class="{ hide: !beforeSelect }">
       <h1>カテゴリーとレベル</h1>
       <button
-        v-on:click="waitMatch(index)"
+        v-on:click="waitMatch(match)"
         class="element"
-        v-for="(match, index) in matches"
+        v-for="match in matches"
         :key="match.id"
       >
         {{ match.level + "×" + match.category }}
@@ -29,7 +29,9 @@
 <script>
 import "loaders.css";
 import ActionCable from "actioncable";
-const createConsumer = ActionCable.createConsumer("ws://localhost:3001/cable");
+const createConsumer = ActionCable.createConsumer(
+  "ws://192.168.100.101:3001/cable"
+);
 
 export default {
   name: "SelectMatch",
@@ -51,9 +53,8 @@ export default {
     };
   },
   methods: {
-    waitMatch: function(e) {
-      var match = this.matches[e];
-      console.log(e);
+    waitMatch: function(match) {
+      console.log(match);
       var user_id = Math.floor(Math.random() * 100) + 1;
       let _this = this;
 
@@ -94,6 +95,8 @@ export default {
           }
         }
       );
+
+      // createConsumer.disconnect();
 
       this.beforeSelect = false;
       // マッチング中

@@ -21,12 +21,7 @@
 
 <script>
 import draggable from "vuedraggable";
-import ActionCable from "actioncable";
 import MD5 from "crypto-js/md5";
-
-const createConsumer = ActionCable.createConsumer(
-  "ws://192.168.100.101:3001/cable"
-);
 export default {
   name: "room",
   components: {
@@ -42,11 +37,12 @@ export default {
       user_id: null
     };
   },
-  created: function() {
-    this.user_id = Math.floor(Math.random() * 100) + 1;
+  mounted: function() {
+    this.user_id = this.$store.getters.user_id;
+    console.log(this.user_id + " とれてる");
     let _this = this;
     console.log(this.$route.params.room_id);
-    this.subscriptions = createConsumer.subscriptions.create(
+    this.subscriptions = this.$cable.subscriptions.create(
       {
         channel: "RoomChannel",
         user_id: this.user_id,

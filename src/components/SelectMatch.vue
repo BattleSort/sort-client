@@ -28,10 +28,6 @@
 
 <script>
 import "loaders.css";
-import ActionCable from "actioncable";
-const createConsumer = ActionCable.createConsumer(
-  "ws://192.168.100.101:3001/cable"
-);
 
 export default {
   name: "SelectMatch",
@@ -55,11 +51,19 @@ export default {
   methods: {
     waitMatch: function(match) {
       console.log(match);
-      var user_id = Math.floor(Math.random() * 100) + 1;
+      var user_id;
+      // TODO: これまでの間に匿名ログイン化、ログインを通して値を入れておきたい
+      if (this.$store.getters.user_id) {
+        user_id = this.$store.getters.user_id;
+      } else {
+        user_id = Math.floor(Math.random() * 100) + 1;
+        this.$store.getters.user_id = user_id;
+      }
+
       let _this = this;
 
       // 各ユーザーは一意で推測不可能なidを付与したroomで対戦相手を待ち受ける
-      createConsumer.subscriptions.create(
+      this.$cable.subscriptions.create(
         {
           channel: "MatchChannel",
           level: match.level,
@@ -77,6 +81,7 @@ export default {
             // Called when the subscription has been terminated by the server
           },
           received(data) {
+            console.log(data);
             // Called when there's incoming data on the websocket for this channel
             switch (data.type) {
               case "moveRoom":
@@ -88,7 +93,6 @@ export default {
               default:
                 break;
             }
-            console.log(data);
           },
           mes(message) {
             this.perform("mes", { message: message });

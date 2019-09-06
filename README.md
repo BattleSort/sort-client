@@ -27,3 +27,8 @@ yarn run lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+## ENV
+
+.env
+VUE_APP_ACTION_CABLE_URL=wss://......

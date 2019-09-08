@@ -28,7 +28,6 @@
 
 <script>
 import "loaders.css";
-
 // TODO: ログイン実装したらいらんやつかも
 import uuid from "uuid/v4";
 
@@ -51,14 +50,11 @@ export default {
       ]
     };
   },
-  mounted: function() {
-    // FIXME: コネクションを全削除
-    this.$cable.subscriptions.subscriptions.forEach(function(e) {
-      this.$cable.subscriptions.remove(e);
-    });
-  },
   methods: {
     waitMatch: function(match) {
+      // FIXME: コネクションを全削除
+      this.$store.commit("deleteSubscriptions");
+
       console.log(match);
       var user_id;
       // TODO: これまでの間に匿名ログイン化、ログインを通して値を入れておきたい
@@ -66,12 +62,13 @@ export default {
         user_id = this.$store.getters.user_id;
       } else {
         user_id = uuid();
-        this.$store.getters.user_id = user_id;
+        this.$store.commit("setUserId", { user_id: user_id });
       }
+      console.log(this);
 
       let _this = this;
       // 各ユーザーは一意で推測不可能なidを付与したroomで対戦相手を待ち受ける
-      _this.$cable.subscriptions.create(
+      this.$store.getters.cable.subscriptions.create(
         {
           channel: "MatchChannel",
           level: match.level,
@@ -94,13 +91,15 @@ export default {
             switch (data.type) {
               case "moveRoom":
                 // 不要なコネクションの削除
-                _this.$cable.subscriptions.subscriptions.forEach(function(e) {
-                  var identifier = e.identifier;
-                  var obj = JSON.parse(identifier);
-                  if (obj.channel == "MatchChannel") {
-                    _this.$cable.subscriptions.remove(e);
+                _this.$store.getters.cable.subscriptions.subscriptions.forEach(
+                  function(e) {
+                    var identifier = e.identifier;
+                    var obj = JSON.parse(identifier);
+                    if (obj.channel == "MatchChannel") {
+                      _this.$store.getters.cable.subscriptions.remove(e);
+                    }
                   }
-                });
+                );
                 _this.$router.push({
                   name: "room",
                   params: { room_id: data.room_id }

@@ -1,5 +1,7 @@
 # sort-client
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/d6dd7939-875e-48bb-a4b8-4fd290a3ef06/deploy-status)](https://app.netlify.com/sites/amazing-turing-ebf404/deploys)
+
 ## Project setup
 ```
 yarn install

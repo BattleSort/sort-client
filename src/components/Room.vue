@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div v-for="(problem, index) in problems" :key="index">
+    <div v-if="problem">
       <h2>{{ problem.name }}</h2>
       <draggable
-        v-model="problems[index].elements"
-        v-bind:group="index"
+        v-model="problem.elements"
+        v-bind:group="problem.name"
         @start="drag = true"
         @end="drag = false"
       >
@@ -12,9 +12,27 @@
           <p>{{ element }}</p>
         </div>
       </draggable>
-      <button v-on:click="submit(index)">
+      <button v-on:click="submit()">
         Submit
       </button>
+    </div>
+    <div v-if="result">
+      <div id="nav"><router-link to="/">Home</router-link></div>
+      <table>
+        <tr v-for="(user, index) in result" :key="index">
+          <td v-bind:class="{ mine: user.id === user_id }">
+            <!-- どういうデータ渡すかがログイン次第で決まらん -->
+            <p v-if="user.id === user_id">You</p>
+            <p>id: {{ user.id }}</p>
+            <p>score: {{ user.score }}</p>
+            <ul>
+              <li v-for="(value, name, index) in user.problems" :key="index">
+                {{ name }} : {{ value }}
+              </li>
+            </ul>
+          </td>
+        </tr>
+      </table>
     </div>
   </div>
 </template>
@@ -33,8 +51,9 @@ export default {
   data: function() {
     return {
       subscriptions: null,
-      problems: null,
-      user_id: null
+      problem: null,
+      user_id: null,
+      result: null
     };
   },
   mounted: function() {
@@ -51,7 +70,7 @@ export default {
       // _thisを忘れずに
       {
         connected() {
-          console.log("connected room " + _this.user_id);
+          console.log("connected room " + _this.$route.params.room_id);
 
           // Called when the subscription is ready for use on the server
         },
@@ -62,8 +81,13 @@ export default {
         received(data) {
           // Called when there's incoming data on the websocket for this channel
           switch (data.type) {
-            case "battleStart":
-              _this.problems = data.problems;
+            case "gameEnd":
+              _this.problem = null;
+              _this.result = JSON.parse(data.result);
+              _this.$cable.disconnect();
+              break;
+            case "deliverProblem":
+              _this.problem = data.problem;
               break;
             default:
               break;
@@ -84,12 +108,10 @@ export default {
     );
   },
   methods: {
-    submit(index) {
-      // def submit(problem_id, ans_hash, user_id)
-      console.log(index);
+    submit() {
       this.subscriptions.submit({
-        problem_id: this.problems[index].id,
-        answer: MD5(this.problems[index].elements.join("")).toString(),
+        problem_id: this.problem.id,
+        answer: MD5(this.problem.elements.join("")).toString(),
         user_id: this.user_id
       });
     }
@@ -105,4 +127,8 @@ export default {
     vertical-align  middle
 .sortable-chosen
   background-color red
+td
+  border aliceblue 5px solid
+.mine
+  background-color aliceblue
 </style>

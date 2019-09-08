@@ -95,8 +95,7 @@ export default {
           if (data.message) {
             _this.$notify({
               group: "notice",
-              title: data.message,
-              text: data.message
+              title: data.message
             });
           }
           console.log(data);

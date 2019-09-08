@@ -29,6 +29,9 @@
 <script>
 import "loaders.css";
 
+// TODO: ログイン実装したらいらんやつかも
+import uuid from "uuid/v4";
+
 export default {
   name: "SelectMatch",
   data: function() {
@@ -48,6 +51,12 @@ export default {
       ]
     };
   },
+  mounted: function() {
+    // FIXME: コネクションを全削除
+    this.$cable.subscriptions.subscriptions.forEach(function(e) {
+      this.$cable.subscriptions.remove(e);
+    });
+  },
   methods: {
     waitMatch: function(match) {
       console.log(match);
@@ -56,14 +65,13 @@ export default {
       if (this.$store.getters.user_id) {
         user_id = this.$store.getters.user_id;
       } else {
-        user_id = Math.floor(Math.random() * 100) + 1;
+        user_id = uuid();
         this.$store.getters.user_id = user_id;
       }
 
       let _this = this;
-
       // 各ユーザーは一意で推測不可能なidを付与したroomで対戦相手を待ち受ける
-      this.$cable.subscriptions.create(
+      _this.$cable.subscriptions.create(
         {
           channel: "MatchChannel",
           level: match.level,
@@ -85,6 +93,14 @@ export default {
             // Called when there's incoming data on the websocket for this channel
             switch (data.type) {
               case "moveRoom":
+                // 不要なコネクションの削除
+                _this.$cable.subscriptions.subscriptions.forEach(function(e) {
+                  var identifier = e.identifier;
+                  var obj = JSON.parse(identifier);
+                  if (obj.channel == "MatchChannel") {
+                    _this.$cable.subscriptions.remove(e);
+                  }
+                });
                 _this.$router.push({
                   name: "room",
                   params: { room_id: data.room_id }
@@ -99,8 +115,6 @@ export default {
           }
         }
       );
-
-      // createConsumer.disconnect();
 
       this.beforeSelect = false;
       // マッチング中

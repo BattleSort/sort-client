@@ -9,7 +9,7 @@
           v-for="(match, index) in matches"
           :key="index"
         >
-          {{ match.level + "×" + match.category }}
+          {{ 難易度[match.level - 1] + " " + match.player_count + "人用" }}
         </button>
       </div>
     </div>
@@ -38,17 +38,22 @@ export default {
   data: function() {
     return {
       beforeSelect: true,
-      matches: [
-        {
-          level: 1,
-          category: "all"
-        },
-        {
-          level: 2,
-          category: "all"
-        }
-      ]
+      // TODO: これらをサーバーから持ってくる
+      難易度: ["簡単", "普通", "激むず"],
+      matches: []
     };
+  },
+  mounted() {
+    let _this = this;
+    [1, 2, 3].forEach(function(level) {
+      [1, 2, 3, 4].forEach(function(player_count) {
+        _this.matches.push({
+          level: level,
+          player_count: player_count,
+          category: "all"
+        });
+      });
+    });
   },
   methods: {
     waitMatch: function(match) {
@@ -72,6 +77,7 @@ export default {
           channel: "MatchChannel",
           level: match.level,
           category: match.category,
+          player_count: match.player_count,
           user_id: user_id
         },
         {
@@ -119,6 +125,7 @@ export default {
   display flex
   flex-wrap: wrap
   justify-content space-around
+  align-content space-around
 .element
   display  block
   margin-bottom 10px

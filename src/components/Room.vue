@@ -86,7 +86,6 @@ export default {
             case "gameEnd":
               _this.problem = null;
               _this.result = JSON.parse(data.result);
-              // FIXME: コネクションを全削除
               _this.$store.commit("deleteSubscriptions");
               break;
             case "deliverProblem":
@@ -110,7 +109,7 @@ export default {
     );
   },
   ready() {
-    // これinput要素ないとだめみたい
+    // FIXME: これinput要素ないとだめみたい
     // window.addEventListener("beforeunload", this.leaving);
   },
   methods: {
@@ -118,6 +117,7 @@ export default {
       this.subscriptions.submit({
         problem_id: this.problem.id,
         answer: MD5(this.problem.elements.join("")).toString()
+        // FIXME: hashにしているのただの趣味なんだよな〜
       });
     },
     leaving() {
@@ -131,6 +131,7 @@ export default {
 <style lang="stylus" scoped>
 .element
   width 80%
+  max-width: 300px;
   margin 0 auto
   border 1px solid black
   p

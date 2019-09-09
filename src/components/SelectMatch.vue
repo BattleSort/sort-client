@@ -1,15 +1,17 @@
 <template>
   <div>
     <div v-bind:class="{ hide: !beforeSelect }">
-      <h1>カテゴリーとレベル</h1>
-      <button
-        v-on:click="waitMatch(match)"
-        class="element"
-        v-for="match in matches"
-        :key="match.id"
-      >
-        {{ match.level + "×" + match.category }}
-      </button>
+      <h2>カテゴリーとレベルを選択</h2>
+      <div class="container">
+        <button
+          v-on:click="waitMatch(match)"
+          class="element"
+          v-for="(match, index) in matches"
+          :key="index"
+        >
+          {{ match.level + "×" + match.category }}
+        </button>
+      </div>
     </div>
     <div v-bind:class="{ hide: beforeSelect }">
       <p>マッチング中</p>
@@ -38,14 +40,12 @@ export default {
       beforeSelect: true,
       matches: [
         {
-          id: 1,
           level: 1,
-          category: "history"
+          category: "all"
         },
         {
-          id: 2,
           level: 2,
-          category: "history"
+          category: "all"
         }
       ]
     };
@@ -54,7 +54,6 @@ export default {
     waitMatch: function(match) {
       // FIXME: コネクションを全削除
       this.$store.commit("deleteSubscriptions");
-
       console.log(match);
       var user_id;
       // TODO: これまでの間に匿名ログイン化、ログインを通して値を入れておきたい
@@ -93,9 +92,7 @@ export default {
                 // 不要なコネクションの削除
                 _this.$store.getters.cable.subscriptions.subscriptions.forEach(
                   function(e) {
-                    var identifier = e.identifier;
-                    var obj = JSON.parse(identifier);
-                    if (obj.channel == "MatchChannel") {
+                    if (JSON.parse(e.identifier).channel == "MatchChannel") {
                       _this.$store.getters.cable.subscriptions.remove(e);
                     }
                   }
@@ -108,35 +105,29 @@ export default {
               default:
                 break;
             }
-          },
-          mes(message) {
-            this.perform("mes", { message: message });
           }
         }
       );
-
       this.beforeSelect = false;
-      // マッチング中
     }
   }
 };
 </script>
 
 <style lang="stylus" scoped>
+.container
+  display flex
+  flex-wrap: wrap
+  justify-content space-around
 .element
   display  block
   margin-bottom 10px
-  height 100px
+  height 60px
   width 200px
-  border 1px solid black
-  p
-    vertical-align middle
-.sortable-chosen
-  background-color red
-
+  border 1px solid dae3eb
+  background-color aliceblue
 .line-scale-pulse-out-rapid > div
   background-color green
-
 .hide
   display none
 </style>

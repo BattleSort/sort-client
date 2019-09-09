@@ -136,8 +136,10 @@ export default {
   border 1px solid black
   p
     vertical-align  middle
+
 .submit
   width 80%
+  max-width: 300px;
   background-color aliceblue
   height  50px
   margin-top 30px

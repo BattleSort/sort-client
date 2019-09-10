@@ -1,8 +1,12 @@
 <template>
   <div>
-    <div :class="{ hide: !beforeSelect }">
+    <div v-if="!categories">
+      <!-- キャッシュしてできるだけ読み込み時間は取りたくない -->
+      <p>読込中</p>
+      <Loading />
+    </div>
+    <div :class="{ hide: !beforeSelect || !categories }">
       <h2>カテゴリーとレベルを選択</h2>
-
       <div class="container">
         <template v-for="category in categories">
           <template v-for="level in levels">
@@ -29,32 +33,25 @@
     </div>
     <div :class="{ hide: beforeSelect }">
       <p>マッチング中</p>
-      <div class="loader">
-        <div class="line-scale-pulse-out-rapid">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
-      </div>
+      <Loading />
     </div>
   </div>
 </template>
 
 <script>
-import "loaders.css";
 // TODO: ログイン実装したらいらんやつかも
 import uuid from "uuid/v4";
-
+import Loading from "@/components/Loading.vue";
 import axios from "axios";
-
 export default {
+  components: {
+    Loading
+  },
   name: "SelectMatch",
   data: function() {
     return {
       beforeSelect: true,
-      categories: [],
+      categories: null,
       levels: [
         { id: 1, name: "簡単" },
         { id: 2, name: "普通" },
@@ -63,7 +60,7 @@ export default {
       player_counts: [1, 2, 4]
     };
   },
-  mounted() {
+  created() {
     let _this = this;
     axios
       .get(process.env.VUE_APP_API_URL + "categories")
@@ -154,8 +151,6 @@ export default {
   width 200px
   border 1px solid dae3eb
   background-color aliceblue
-.line-scale-pulse-out-rapid > div
-  background-color green
 .hide
   display none
 </style>

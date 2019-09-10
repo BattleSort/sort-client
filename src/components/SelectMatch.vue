@@ -70,7 +70,6 @@ export default {
       //thenで成功した場合
       .then(function(response) {
         _this.categories = response.data;
-        _this.createMatches();
       })
       //chachでエラーの挙動を定義
       .catch(function(error) {

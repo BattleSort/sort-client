@@ -1,19 +1,33 @@
 <template>
   <div>
-    <div v-bind:class="{ hide: !beforeSelect }">
+    <div :class="{ hide: !beforeSelect }">
       <h2>カテゴリーとレベルを選択</h2>
+
       <div class="container">
-        <button
-          v-on:click="waitMatch(match)"
-          class="element"
-          v-for="(match, index) in matches"
-          :key="index"
-        >
-          {{ 難易度[match.level - 1] + " " + match.player_count + "人用" }}
-        </button>
+        <template v-for="category in categories">
+          <template v-for="level in levels">
+            <template v-for="player_count in player_counts">
+              <button
+                :key="level.id + ' ' + category.id + ' ' + player_count"
+                class="element"
+                @click="
+                  waitMatch({
+                    level: level.id,
+                    category: category.id,
+                    player_count: player_count
+                  })
+                "
+              >
+                {{
+                  category.name + " " + level.name + " " + player_count + "人用"
+                }}
+              </button>
+            </template>
+          </template>
+        </template>
       </div>
     </div>
-    <div v-bind:class="{ hide: beforeSelect }">
+    <div :class="{ hide: beforeSelect }">
       <p>マッチング中</p>
       <div class="loader">
         <div class="line-scale-pulse-out-rapid">
@@ -33,27 +47,35 @@ import "loaders.css";
 // TODO: ログイン実装したらいらんやつかも
 import uuid from "uuid/v4";
 
+import axios from "axios";
+
 export default {
   name: "SelectMatch",
   data: function() {
     return {
       beforeSelect: true,
-      // TODO: これらをサーバーから持ってくる
-      難易度: ["簡単", "普通", "激むず"],
-      matches: []
+      categories: [],
+      levels: [
+        { id: 1, name: "簡単" },
+        { id: 2, name: "普通" },
+        { id: 3, name: "激むず" }
+      ],
+      player_counts: [1, 2, 4]
     };
   },
   mounted() {
     let _this = this;
-    [1, 2, 3].forEach(function(level) {
-      [1, 2, 3, 4].forEach(function(player_count) {
-        _this.matches.push({
-          level: level,
-          player_count: player_count,
-          category: "all"
-        });
+    axios
+      .get(process.env.VUE_APP_API_URL + "categories")
+      //thenで成功した場合
+      .then(function(response) {
+        _this.categories = response.data;
+        _this.createMatches();
+      })
+      //chachでエラーの挙動を定義
+      .catch(function(error) {
+        console.log(error);
       });
-    });
   },
   methods: {
     waitMatch: function(match) {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="problem">
+    <div class="problem" v-if="problem">
       <h2>{{ problem.name }}</h2>
       <draggable
         v-model="problem.elements"
@@ -97,7 +97,8 @@ export default {
           if (data.message) {
             _this.$notify({
               group: "notice",
-              title: data.message
+              title: data.message,
+              duration: 100
             });
           }
           console.log(data);
@@ -129,6 +130,9 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
+.problem
+  margin-top 50px
+
 .element
   width 80%
   max-width: 300px;

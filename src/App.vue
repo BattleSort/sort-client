@@ -1,7 +1,6 @@
 <template>
   <div id="app">
-    <notifications group="notice" />
-    <!-- <div id="nav"><router-link to="/">Home</router-link></div> -->
+    <notifications group="notice" position="top center" :max="1" />
     <router-view />
   </div>
 </template>

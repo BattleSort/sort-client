@@ -3,8 +3,10 @@
     <div v-if="problem">
       <h2>{{ problem.name }}</h2>
       <draggable
+        :animation="200"
         v-model="problem.elements"
         v-bind:group="{ name: problem.name, put: false, pull: false }"
+        ghostClass="sortable-ghost"
         @start="drag = true"
         @end="drag = false"
       >
@@ -150,4 +152,6 @@ td
   border aliceblue 5px solid
 .mine
   background-color aliceblue
+.sortable-ghost
+  visibility hidden
 </style>

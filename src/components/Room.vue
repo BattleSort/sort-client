@@ -43,7 +43,7 @@
 import draggable from "vuedraggable";
 import MD5 from "crypto-js/md5";
 export default {
-  name: "room",
+  name: "Room",
   components: {
     draggable
   },
@@ -92,6 +92,7 @@ export default {
               break;
             case "deliverProblem":
               _this.problem = data.problem;
+              _this.problem.received_time = new Date();
               break;
             default:
               break;
@@ -119,8 +120,9 @@ export default {
     submit() {
       this.subscriptions.submit({
         problem_id: this.problem.id,
-        answer: MD5(this.problem.elements.join("")).toString()
         // FIXME: hashにしているのただの趣味なんだよな〜
+        answer: MD5(this.problem.elements.join("")).toString(),
+        required_time: new Date() - this.problem.received_time
       });
     },
     leaving() {

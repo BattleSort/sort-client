@@ -11,10 +11,9 @@
 import SelectMatch from "@/components/SelectMatch.vue";
 
 export default {
-  name: "home",
+  name: "Home",
   components: {
-    SelectMatch //,
-    // Login
+    SelectMatch
   }
 };
 </script>

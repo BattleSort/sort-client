@@ -46,7 +46,6 @@
 
 <script>
 import draggable from "vuedraggable";
-import MD5 from "crypto-js/md5";
 import Loading from "@/components/Loading.vue";
 export default {
   name: "Room",
@@ -130,8 +129,7 @@ export default {
     submit() {
       this.subscriptions.submit({
         problem_id: this.problem.id,
-        // FIXME: hashにしているのただの趣味なんだよな〜
-        answer: MD5(this.problem.elements.join("")).toString(),
+        answer: this.problem.elements.join("|"),
         required_time: new Date() - this.problem.received_time
       });
     },

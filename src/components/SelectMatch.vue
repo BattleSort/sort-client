@@ -44,10 +44,10 @@ import uuid from "uuid/v4";
 import Loading from "@/components/Loading.vue";
 import axios from "axios";
 export default {
+  name: "SelectMatch",
   components: {
     Loading
   },
-  name: "SelectMatch",
   data: function() {
     return {
       beforeSelect: true,

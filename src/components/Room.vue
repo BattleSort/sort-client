@@ -1,5 +1,10 @@
 <template>
   <div>
+    <transition name="overlay">
+      <div class="overlay" v-if="waiting">
+        <Loading />
+      </div>
+    </transition>
     <div class="problem" v-if="problem">
       <h2>{{ problem.name }}</h2>
       <draggable
@@ -42,10 +47,12 @@
 <script>
 import draggable from "vuedraggable";
 import MD5 from "crypto-js/md5";
+import Loading from "@/components/Loading.vue";
 export default {
-  name: "room",
+  name: "Room",
   components: {
-    draggable
+    draggable,
+    Loading
   },
   props: {
     room_id: String
@@ -55,7 +62,8 @@ export default {
       subscriptions: null,
       problem: null,
       user_id: null,
-      result: null
+      result: null,
+      waiting: false
     };
   },
   mounted: function() {
@@ -84,6 +92,7 @@ export default {
           console.log("disconnected");
         },
         received(data) {
+          _this.waiting = false;
           switch (data.type) {
             case "gameEnd":
               _this.problem = null;
@@ -92,6 +101,7 @@ export default {
               break;
             case "deliverProblem":
               _this.problem = data.problem;
+              _this.problem.received_time = new Date();
               break;
             default:
               break;
@@ -107,6 +117,7 @@ export default {
         },
         submit(obj) {
           this.perform("submit", obj);
+          _this.waiting = true;
         }
       }
     );
@@ -119,8 +130,9 @@ export default {
     submit() {
       this.subscriptions.submit({
         problem_id: this.problem.id,
-        answer: MD5(this.problem.elements.join("")).toString()
         // FIXME: hashにしているのただの趣味なんだよな〜
+        answer: MD5(this.problem.elements.join("")).toString(),
+        required_time: new Date() - this.problem.received_time
       });
     },
     leaving() {
@@ -132,6 +144,21 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
+.overlay
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgba(255,255,255,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+.overlay-enter-active, .overlay-leave-active
+  transition: opacity .3s;
+.overlay-enter, .overlay-leave-to
+  opacity 0;
+
 .problem
   margin-top 50px
 
@@ -144,6 +171,7 @@ export default {
     vertical-align  middle
 
 .submit
+  outline: none;
   width 80%
   max-width: 300px;
   background-color aliceblue

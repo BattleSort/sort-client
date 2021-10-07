@@ -1,64 +1,82 @@
 <template>
   <div>
-    <div v-bind:class="{ hide: !beforeSelect }">
-      <h1>カテゴリーとレベル</h1>
-      <button
-        v-on:click="waitMatch(match)"
-        class="element"
-        v-for="match in matches"
-        :key="match.id"
-      >
-        {{ match.level + "×" + match.category }}
-      </button>
+    <div v-if="!categories">
+      <!-- キャッシュしてできるだけ読み込み時間は取りたくない -->
+      <p>読込中</p>
+      <Loading />
     </div>
-    <div v-bind:class="{ hide: beforeSelect }">
-      <p>マッチング中</p>
-      <div class="loader">
-        <div class="line-scale-pulse-out-rapid">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
+    <div :class="{ hide: !beforeSelect || !categories }">
+      <h2>カテゴリーとレベルを選択</h2>
+      <div class="container">
+        <template v-for="category in categories">
+          <template v-for="level in levels">
+            <template v-for="player_count in player_counts">
+              <button
+                :key="level.id + ' ' + category.id + ' ' + player_count"
+                class="element"
+                @click="
+                  waitMatch({
+                    level: level.id,
+                    category: category.id,
+                    player_count: player_count
+                  })
+                "
+              >
+                {{
+                  category.name + " " + level.name + " " + player_count + "人用"
+                }}
+              </button>
+            </template>
+          </template>
+        </template>
       </div>
+    </div>
+    <div :class="{ hide: beforeSelect }">
+      <p>マッチング中</p>
+      <Loading />
     </div>
   </div>
 </template>
 
 <script>
-import "loaders.css";
-
 // TODO: ログイン実装したらいらんやつかも
 import uuid from "uuid/v4";
-
+import Loading from "@/components/Loading.vue";
+import axios from "axios";
 export default {
   name: "SelectMatch",
+  components: {
+    Loading
+  },
   data: function() {
     return {
       beforeSelect: true,
-      matches: [
-        {
-          id: 1,
-          level: 1,
-          category: "history"
-        },
-        {
-          id: 2,
-          level: 2,
-          category: "history"
-        }
-      ]
+      categories: null,
+      levels: [
+        { id: 1, name: "簡単" },
+        { id: 2, name: "普通" },
+        { id: 3, name: "激むず" }
+      ],
+      player_counts: [1, 2, 4]
     };
   },
-  mounted: function() {
-    // FIXME: コネクションを全削除
-    this.$cable.subscriptions.subscriptions.forEach(function(e) {
-      this.$cable.subscriptions.remove(e);
-    });
+  created() {
+    let _this = this;
+    axios
+      .get(process.env.VUE_APP_API_URL + "categories")
+      //thenで成功した場合
+      .then(function(response) {
+        _this.categories = response.data;
+      })
+      //chachでエラーの挙動を定義
+      .catch(function(error) {
+        console.log(error);
+      });
   },
   methods: {
     waitMatch: function(match) {
+      // FIXME: コネクションを全削除
+      this.$store.commit("deleteSubscriptions");
       console.log(match);
       var user_id;
       // TODO: これまでの間に匿名ログイン化、ログインを通して値を入れておきたい
@@ -66,16 +84,18 @@ export default {
         user_id = this.$store.getters.user_id;
       } else {
         user_id = uuid();
-        this.$store.getters.user_id = user_id;
+        this.$store.commit("setUserId", { user_id: user_id });
       }
+      console.log(this);
 
       let _this = this;
       // 各ユーザーは一意で推測不可能なidを付与したroomで対戦相手を待ち受ける
-      _this.$cable.subscriptions.create(
+      this.$store.getters.cable.subscriptions.create(
         {
           channel: "MatchChannel",
           level: match.level,
           category: match.category,
+          player_count: match.player_count,
           user_id: user_id
         },
         {
@@ -94,13 +114,13 @@ export default {
             switch (data.type) {
               case "moveRoom":
                 // 不要なコネクションの削除
-                _this.$cable.subscriptions.subscriptions.forEach(function(e) {
-                  var identifier = e.identifier;
-                  var obj = JSON.parse(identifier);
-                  if (obj.channel == "MatchChannel") {
-                    _this.$cable.subscriptions.remove(e);
+                _this.$store.getters.cable.subscriptions.subscriptions.forEach(
+                  function(e) {
+                    if (JSON.parse(e.identifier).channel == "MatchChannel") {
+                      _this.$store.getters.cable.subscriptions.remove(e);
+                    }
                   }
-                });
+                );
                 _this.$router.push({
                   name: "room",
                   params: { room_id: data.room_id }
@@ -109,35 +129,28 @@ export default {
               default:
                 break;
             }
-          },
-          mes(message) {
-            this.perform("mes", { message: message });
           }
         }
       );
-
       this.beforeSelect = false;
-      // マッチング中
     }
   }
 };
 </script>
 
 <style lang="stylus" scoped>
+.container
+  display flex
+  flex-wrap: wrap
+  justify-content space-around
+  align-content space-around
 .element
   display  block
   margin-bottom 10px
-  height 100px
+  height 60px
   width 200px
-  border 1px solid black
-  p
-    vertical-align middle
-.sortable-chosen
-  background-color red
-
-.line-scale-pulse-out-rapid > div
-  background-color green
-
+  border 1px solid dae3eb
+  background-color aliceblue
 .hide
   display none
 </style>

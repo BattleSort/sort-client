@@ -1,6 +1,8 @@
 <template>
   <div class="home">
+    <h1>Battle Sort</h1>
     <SelectMatch />
+    <p>version 0.0.6</p>
   </div>
 </template>
 
@@ -9,10 +11,9 @@
 import SelectMatch from "@/components/SelectMatch.vue";
 
 export default {
-  name: "home",
+  name: "Home",
   components: {
-    SelectMatch //,
-    // Login
+    SelectMatch
   }
 };
 </script>

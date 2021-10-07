@@ -4,27 +4,32 @@ import App from "./App.vue";
 import router from "./router";
 import "./registerServiceWorker";
 import Vuex from "vuex";
-
 import ActionCable from "actioncable";
-const cable = ActionCable.createConsumer(process.env.VUE_APP_ACTION_CABLE_URL);
-Vue.prototype.$cable = cable;
-
 Vue.use(Vuex);
 
 const store = new Vuex.Store({
   state: {
     user: {
       id: ""
-    }
+    },
+    cable: ActionCable.createConsumer(process.env.VUE_APP_ACTION_CABLE_URL)
   },
   mutations: {
     setUserId(state, payload) {
       state.user.id = payload.user_id;
+    },
+    deleteSubscriptions(state) {
+      state.cable.subscriptions.subscriptions.forEach(function(e) {
+        state.cable.subscriptions.remove(e);
+      });
     }
   },
   getters: {
-    getUserId(state) {
+    user_id(state) {
       return state.user.id;
+    },
+    cable(state) {
+      return state.cable;
     }
   }
 });

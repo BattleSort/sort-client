@@ -1,10 +1,17 @@
 <template>
   <div>
-    <div v-if="problem">
+    <transition name="overlay">
+      <div class="overlay" v-if="waiting">
+        <Loading />
+      </div>
+    </transition>
+    <div class="problem" v-if="problem">
       <h2>{{ problem.name }}</h2>
       <draggable
+        :animation="200"
         v-model="problem.elements"
-        v-bind:group="problem.name"
+        v-bind:group="{ name: problem.name, put: false, pull: false }"
+        ghostClass="sortable-ghost"
         @start="drag = true"
         @end="drag = false"
       >
@@ -12,7 +19,7 @@
           <p>{{ element }}</p>
         </div>
       </draggable>
-      <button v-on:click="submit()">
+      <button class="submit" v-on:click="submit()">
         Submit
       </button>
     </div>
@@ -39,11 +46,12 @@
 
 <script>
 import draggable from "vuedraggable";
-import MD5 from "crypto-js/md5";
+import Loading from "@/components/Loading.vue";
 export default {
-  name: "room",
+  name: "Room",
   components: {
-    draggable
+    draggable,
+    Loading
   },
   props: {
     room_id: String
@@ -53,15 +61,22 @@ export default {
       subscriptions: null,
       problem: null,
       user_id: null,
-      result: null
+      result: null,
+      waiting: false
     };
   },
   mounted: function() {
     this.user_id = this.$store.getters.user_id;
+    if (!this.user_id) {
+      this.$router.push({
+        name: "home"
+      });
+      return;
+    }
     console.log(this.user_id + " とれてる");
-    let _this = this;
     console.log(this.$route.params.room_id);
-    this.subscriptions = this.$cable.subscriptions.create(
+    let _this = this;
+    this.subscriptions = this.$store.getters.cable.subscriptions.create(
       {
         channel: "RoomChannel",
         user_id: this.user_id,
@@ -71,23 +86,21 @@ export default {
       {
         connected() {
           console.log("connected room " + _this.$route.params.room_id);
-
-          // Called when the subscription is ready for use on the server
         },
         disconnected() {
           console.log("disconnected");
-          // Called when the subscription has been terminated by the server
         },
         received(data) {
-          // Called when there's incoming data on the websocket for this channel
+          _this.waiting = false;
           switch (data.type) {
             case "gameEnd":
               _this.problem = null;
               _this.result = JSON.parse(data.result);
-              _this.$cable.disconnect();
+              _this.$store.commit("deleteSubscriptions");
               break;
             case "deliverProblem":
               _this.problem = data.problem;
+              _this.problem.received_time = new Date();
               break;
             default:
               break;
@@ -96,39 +109,79 @@ export default {
             _this.$notify({
               group: "notice",
               title: data.message,
-              text: data.message
+              duration: 100
             });
           }
           console.log(data);
         },
         submit(obj) {
           this.perform("submit", obj);
+          _this.waiting = true;
         }
       }
     );
+  },
+  ready() {
+    // FIXME: これinput要素ないとだめみたい
+    // window.addEventListener("beforeunload", this.leaving);
   },
   methods: {
     submit() {
       this.subscriptions.submit({
         problem_id: this.problem.id,
-        answer: MD5(this.problem.elements.join("")).toString(),
-        user_id: this.user_id
+        answer: this.problem.elements.join("|"),
+        required_time: new Date() - this.problem.received_time
       });
+    },
+    leaving() {
+      console.log("test");
+      return "本当に離脱しますか？";
     }
   }
 };
 </script>
 
 <style lang="stylus" scoped>
+.overlay
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgba(255,255,255,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+.overlay-enter-active, .overlay-leave-active
+  transition: opacity .3s;
+.overlay-enter, .overlay-leave-to
+  opacity 0;
+
+.problem
+  margin-top 50px
+
 .element
   width 80%
+  max-width: 300px;
+  margin 0 auto
   border 1px solid black
   p
     vertical-align  middle
+
+.submit
+  outline: none;
+  width 80%
+  max-width: 300px;
+  background-color aliceblue
+  height  50px
+  margin-top 30px
+
 .sortable-chosen
   background-color red
 td
   border aliceblue 5px solid
 .mine
   background-color aliceblue
+.sortable-ghost
+  visibility hidden
 </style>

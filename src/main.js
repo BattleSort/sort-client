@@ -4,32 +4,31 @@ import App from "./App.vue";
 import router from "./router";
 import "./registerServiceWorker";
 import Vuex from "vuex";
-import ActionCable from "actioncable";
+import PeerManager from "./network/PeerManager";
+
+const peerManager = new PeerManager();
+Vue.prototype.$peerManager = peerManager;
 Vue.use(Vuex);
 
 const store = new Vuex.Store({
   state: {
     user: {
       id: ""
-    },
-    cable: ActionCable.createConsumer(process.env.VUE_APP_ACTION_CABLE_URL)
+    }
   },
   mutations: {
     setUserId(state, payload) {
       state.user.id = payload.user_id;
     },
     deleteSubscriptions(state) {
-      state.cable.subscriptions.subscriptions.forEach(function(e) {
-        state.cable.subscriptions.remove(e);
-      });
+      // state.cable.subscriptions.subscriptions.forEach(function(e) {
+      //   state.cable.subscriptions.remove(e);
+      // });
     }
   },
   getters: {
     user_id(state) {
       return state.user.id;
-    },
-    cable(state) {
-      return state.cable;
     }
   }
 });

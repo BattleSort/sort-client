@@ -97,6 +97,12 @@ export default class PeerManager {
                     this.players.push(senderId);
                 }
                 this.broadcast({ type: "PLAYERS_UPDATE", players: this.players });
+                this.emit("PLAYERS_UPDATE", { players: this.players });
+            }
+        } else {
+            if (data.type === "PLAYERS_UPDATE") {
+                this.players = data.players;
+                this.emit("PLAYERS_UPDATE", { players: this.players });
             }
         }
 

@@ -116,6 +116,7 @@ export default {
       try {
         const id = await this.$peerManager.joinRoom(this.joinId.toUpperCase());
         this.myId = id;
+        this.players = this.$peerManager.players; // Initial list (at least contains self)
         this.isConnected = true;
       } catch (e) {
         this.joinStatus = "エラー：ルームが見つかりません。";

@@ -292,17 +292,27 @@ export default {
         .sort((a, b) => a.time - b.time);
         
       roundScores.forEach((s, i) => {
-        // Points Calculation
-        let pts = 0;
-        
-        // Only award points if exactly correct
-        if (s.answer === correctStr) {
-           pts = 1000 - (i * 200) - Math.floor(s.time / 50);
-           if (pts < 0) pts = 0;
+        // Base Points Calculation (time-based and rank-based)
+        let basePts = 1000 - (i * 200) - Math.floor(s.time / 50);
+        if (basePts < 0) basePts = 0;
+
+        // Calculate Mistakes (elements in wrong positions)
+        let mistakes = 0;
+        const userElements = s.answer.split("|");
+        const correctElements = this.problem.correctOrder;
+        userElements.forEach((el, idx) => {
+          if (el !== correctElements[idx]) {
+            mistakes++;
+          }
+        });
+
+        // Points-halving penalty
+        let pts = basePts;
+        if (mistakes > 0) {
+          pts = Math.floor(basePts / Math.pow(2, mistakes));
+          s.answer = `⚠️ 間違い ${mistakes}箇所: ${s.answer.replace(/\|/g, " ❯ ")}`;
         } else {
-           // Incorrect answer gets 0 points and a huge penalty string
-           pts = 0;
-           s.answer = "❌ 不正解: " + s.answer;
+          s.answer = s.answer.replace(/\|/g, " ❯ ");
         }
 
         s.roundScore = pts;

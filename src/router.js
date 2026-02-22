@@ -24,6 +24,12 @@ export default new Router({
       name: "room",
       component: () =>
         import(/* webpackChunkName: "about" */ "./views/Room.vue")
+    },
+    {
+      path: "/debug/problems",
+      name: "problem-list",
+      component: () =>
+        import("./views/ProblemList.vue")
     }
   ]
 });

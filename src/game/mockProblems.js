@@ -1,28 +1,37 @@
 export const mockProblems = [
     {
-        category: 1, // sample category ID
-        level: 1,    // sample level ID
+        category: 1,
+        level: 1,
         problems: [
             {
                 id: "mock-1",
-                name: "Sort by size (small to large)",
-                elements: ["Elephant", "Cat", "Mouse", "Ant"]
+                name: "小さい順に並べ替えろ",
+                elements: ["ネズミ", "猫", "犬", "ゾウ"],
+                correctOrder: ["ネズミ", "猫", "犬", "ゾウ"]
             },
             {
                 id: "mock-2",
-                name: "Sort alphabetically",
-                elements: ["Banana", "Apple", "Cherry", "Date"]
-            }
-        ]
-    },
-    {
-        category: 1,
-        level: 2,
-        problems: [
+                name: "昔からある順に並べ替えろ",
+                elements: ["ファミコン", "ゲームボーイ", "Nintendo DS", "Nintendo Switch"],
+                correctOrder: ["ファミコン", "ゲームボーイ", "Nintendo DS", "Nintendo Switch"]
+            },
             {
                 id: "mock-3",
-                name: "Sort by release year (old to new)",
-                elements: ["PS4", "PS2", "PS1", "PS3"]
+                name: "北から順に並べ替えろ",
+                elements: ["北海道", "青森県", "東京都", "沖縄県"],
+                correctOrder: ["北海道", "青森県", "東京都", "沖縄県"]
+            },
+            {
+                id: "mock-4",
+                name: "背が低い順に並べ替えろ",
+                elements: ["東京タワー", "東京スカイツリー", "富士山", "エベレスト"],
+                correctOrder: ["東京タワー", "東京スカイツリー", "富士山", "エベレスト"]
+            },
+            {
+                id: "mock-5",
+                name: "画数が少ない順に並べ替えろ",
+                elements: ["一", "十", "百", "千"],
+                correctOrder: ["一", "十", "千", "百"]
             }
         ]
     }
@@ -33,19 +42,19 @@ export function getMockProblem(categoryId, levelId, seed) {
         (p) => p.category === categoryId && p.level === levelId
     );
     if (!categoryProblems || categoryProblems.problems.length === 0) {
-        // fallback problem
         return {
             id: "fallback",
-            name: "Sort numbers",
-            elements: ["4", "1", "3", "2"],
+            name: "数字を小さい順に並べろ",
+            elements: ["1", "2", "3", "4"],
+            correctOrder: ["1", "2", "3", "4"]
         };
     }
 
     // Use seed to deterministically pick a problem and shuffle elements
     const problemIndex = seed % categoryProblems.problems.length;
-    const originalProblem = categoryProblems.problems[problemIndex];
+    let originalProblem = JSON.parse(JSON.stringify(categoryProblems.problems[problemIndex]));
 
-    // deterministic shuffle based on seed
+    // deterministic shuffle based on seed (Fisher-Yates)
     let shuffledElements = [...originalProblem.elements];
     let currentSeed = seed;
     for (let i = shuffledElements.length - 1; i > 0; i--) {
@@ -54,8 +63,6 @@ export function getMockProblem(categoryId, levelId, seed) {
         [shuffledElements[i], shuffledElements[j]] = [shuffledElements[j], shuffledElements[i]];
     }
 
-    return {
-        ...originalProblem,
-        elements: shuffledElements
-    };
+    originalProblem.elements = shuffledElements;
+    return originalProblem;
 }

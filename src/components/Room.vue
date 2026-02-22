@@ -19,6 +19,7 @@
         :animation="200"
         v-model="problem.elements"
         :group="{ name: problem.name, put: false, pull: false }"
+        :disabled="hasSubmitted"
         ghostClass="sortable-ghost"
         class="drag-area"
       >
@@ -104,6 +105,7 @@ export default {
       mySeedHash: null,
       startTime: 0,
       mySubmitData: null,
+      mistakeCount: 0,
       
       // Host State
       commitSeeds: {}, 
@@ -139,6 +141,7 @@ export default {
       this.mySeedHash = this.$peerManager.hash(this.mySeed);
       this.mySubmitData = null;
       this.hasSubmitted = false;
+      this.mistakeCount = 0;
       this.problem = null;
       this.result = null;
       
@@ -209,6 +212,9 @@ export default {
         if (expectedHash !== this.commitSubmits[senderId]) {
            console.error("Submit hash mismatch!", senderId);
         }
+        
+        // Ensure revealSubmits has mistakeCount
+        this.revealSubmits[senderId].mistakeCount = data.data.mistakeCount || 0;
 
         if (Object.keys(this.revealSubmits).length === this.$peerManager.players.length) {
           this.calculateResults();
@@ -266,15 +272,29 @@ export default {
 
     submit() {
       if (this.hasSubmitted) return;
-      this.hasSubmitted = true;
-      const timeMs = Date.now() - this.startTime;
+      
+      const correctStr = this.problem.correctOrder.join("|");
       const answerStr = this.problem.elements.join("|");
       
-      this.mySubmitData = { time: timeMs, answer: answerStr };
+      if (answerStr !== correctStr) {
+        this.mistakeCount++;
+        this.$notify({
+          group: 'foo',
+          type: 'error',
+          title: '不正解！',
+          text: '並び順が正しくありません。もう一度挑戦してください。'
+        });
+        return;
+      }
+
+      this.hasSubmitted = true;
+      const timeMs = Date.now() - this.startTime;
+      
+      this.mySubmitData = { time: timeMs, answer: answerStr, mistakeCount: this.mistakeCount };
       const hash = this.$peerManager.hash(JSON.stringify(this.mySubmitData));
       
-      this.statusText = "他のプレイヤーの完了を待機中...";
-      this.waiting = true;
+      // Removed waiting = true; as per user request to stay on screen
+      // this.waiting = true;
       this.$peerManager.sendToHost({ type: "SUBMIT_COMMIT", hash });
     },
 
@@ -282,12 +302,13 @@ export default {
       // Create expected reference string
       const correctStr = this.problem.correctOrder.join("|");
 
-      // Round scoring based on time AND correctness
+      // Round scoring based on time AND mistakes
       const roundScores = Object.keys(this.revealSubmits)
         .map(id => ({
           id,
           time: this.revealSubmits[id].time,
-          answer: this.revealSubmits[id].answer
+          answer: this.revealSubmits[id].answer,
+          mistakeCount: this.revealSubmits[id].mistakeCount || 0
         }))
         .sort((a, b) => a.time - b.time);
         
@@ -296,21 +317,11 @@ export default {
         let basePts = 1000 - (i * 200) - Math.floor(s.time / 50);
         if (basePts < 0) basePts = 0;
 
-        // Calculate Mistakes (elements in wrong positions)
-        let mistakes = 0;
-        const userElements = s.answer.split("|");
-        const correctElements = this.problem.correctOrder;
-        userElements.forEach((el, idx) => {
-          if (el !== correctElements[idx]) {
-            mistakes++;
-          }
-        });
-
-        // Points-halving penalty
-        let pts = basePts;
-        if (mistakes > 0) {
-          pts = Math.floor(basePts / Math.pow(2, mistakes));
-          s.answer = `⚠️ 間違い ${mistakes}箇所: ${s.answer.replace(/\|/g, " ❯ ")}`;
+        // Points-halving penalty (based on mistakeCount per attempt)
+        let pts = Math.floor(basePts / Math.pow(2, s.mistakeCount));
+        
+        if (s.mistakeCount > 0) {
+          s.answer = `⚠️ 再挑戦 ${s.mistakeCount}回: ${s.answer.replace(/\|/g, " ❯ ")}`;
         } else {
           s.answer = s.answer.replace(/\|/g, " ❯ ");
         }

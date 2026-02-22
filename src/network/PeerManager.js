@@ -10,7 +10,9 @@ export default class PeerManager {
 
         this.myPeerId = null;
         this.hostId = null;
+        this.myNickname = "";
         this.players = []; // Array of ids including self
+        this.idToName = {}; // peerId -> nickname
     }
 
     on(event, handler) {
@@ -48,24 +50,28 @@ export default class PeerManager {
         });
     }
 
-    async beHost(customId) {
+    async beHost(customId, nickname) {
         this.isHost = true;
+        this.myNickname = nickname || "Host";
         const id = await this.init(customId);
         this.players = [id];
+        this.idToName[id] = this.myNickname;
         return id;
     }
 
-    async joinRoom(hostId) {
+    async joinRoom(hostId, nickname) {
         this.isHost = false;
         this.hostId = hostId;
+        this.myNickname = nickname || "Guest";
         const id = await this.init();
         this.players = [id];
+        this.idToName[id] = this.myNickname;
 
         return new Promise((resolve, reject) => {
             const conn = this.peer.connect(hostId);
             conn.on("open", () => {
                 this._setupConnection(conn);
-                this._sendTo(hostId, { type: "JOIN" });
+                this._sendTo(hostId, { type: "JOIN", nickname: this.myNickname });
                 resolve(id);
             });
             conn.on("error", (err) => {
@@ -96,13 +102,19 @@ export default class PeerManager {
                 if (!this.players.includes(senderId)) {
                     this.players.push(senderId);
                 }
-                this.broadcast({ type: "PLAYERS_UPDATE", players: this.players });
-                this.emit("PLAYERS_UPDATE", { players: this.players });
+                this.idToName[senderId] = data.nickname || "Guest";
+                this.broadcast({
+                    type: "PLAYERS_UPDATE",
+                    players: this.players,
+                    idToName: this.idToName
+                });
+                this.emit("PLAYERS_UPDATE", { players: this.players, idToName: this.idToName });
             }
         } else {
             if (data.type === "PLAYERS_UPDATE") {
                 this.players = data.players;
-                this.emit("PLAYERS_UPDATE", { players: this.players });
+                this.idToName = data.idToName;
+                this.emit("PLAYERS_UPDATE", { players: this.players, idToName: this.idToName });
             }
         }
 

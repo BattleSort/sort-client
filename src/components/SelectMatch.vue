@@ -3,6 +3,11 @@
     <div class="card glass-panel" v-if="mode === 'select'">
       <h2>ローカルP2P対戦</h2>
       <p class="desc">友達とルームIDを共有して遊ぼう！</p>
+      
+      <div class="nickname-input">
+        <input type="text" v-model="nickname" placeholder="ニックネームを入力" class="input-field-small" maxlength="10" />
+      </div>
+
       <div class="buttons">
         <button class="btn btn-neon-blue" @click="startHost">
           <span class="icon">💻</span> ルームを作成する
@@ -24,7 +29,7 @@
         <div class="list-header">参加者 ({{ players.length }} / 4)</div>
         <ul>
           <li v-for="p in players" :key="p" :class="{ me: p === myId }">
-            {{ p === myId ? p.substring(0,6) + ' (あなた)' : p.substring(0,6) }}
+            {{ p === myId ? ($peerManager.idToName[p] || p.substring(0,6)) + ' (あなた)' : ($peerManager.idToName[p] || p.substring(0,6)) }}
           </li>
         </ul>
       </div>
@@ -58,12 +63,12 @@
         <p class="desc glow-text">ホストが開始するのを待機中...</p>
         
         <div class="players-list">
-          <div class="list-header">現在の参加者 ({{ players.length }} / 4)</div>
-          <ul>
-            <li v-for="p in players" :key="p" :class="{ me: p === myId }">
-              {{ p === myId ? p.substring(0,6) + ' (あなた)' : p.substring(0,6) }}
-            </li>
-          </ul>
+        <div class="list-header">現在の参加者 ({{ players.length }} / 4)</div>
+        <ul>
+          <li v-for="p in players" :key="p" :class="{ me: p === myId }">
+            {{ p === myId ? ($peerManager.idToName[p] || p.substring(0,6)) + ' (あなた)' : ($peerManager.idToName[p] || p.substring(0,6)) }}
+          </li>
+        </ul>
         </div>
         
         <button class="btn btn-secondary" @click="disconnect">退出する</button>
@@ -83,8 +88,14 @@ export default {
       joinId: "",
       players: [],
       joinStatus: "",
-      isConnected: false
+      isConnected: false,
+      nickname: localStorage.getItem("btl_sort_name") || ""
     };
+  },
+  watch: {
+    nickname(newVal) {
+      localStorage.setItem("btl_sort_name", newVal);
+    }
   },
   created() {
     this.$peerManager.on("PLAYERS_UPDATE", (data) => {
@@ -101,10 +112,14 @@ export default {
   },
   methods: {
     async startHost() {
+      if (!this.nickname) {
+        this.joinStatus = "ニックネームを入力してください";
+        return;
+      }
       this.mode = "host";
       this.roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
       try {
-        const id = await this.$peerManager.beHost(this.roomId);
+        const id = await this.$peerManager.beHost(this.roomId, this.nickname);
         this.myId = id;
         this.players = this.$peerManager.players;
       } catch (e) {
@@ -112,9 +127,13 @@ export default {
       }
     },
     async joinGame() {
+      if (!this.nickname) {
+        this.joinStatus = "ニックネームを入力してください";
+        return;
+      }
       this.joinStatus = "接続中...";
       try {
-        const id = await this.$peerManager.joinRoom(this.joinId.toUpperCase());
+        const id = await this.$peerManager.joinRoom(this.joinId.toUpperCase(), this.nickname);
         this.myId = id;
         this.players = this.$peerManager.players; // Initial list (at least contains self)
         this.isConnected = true;
@@ -321,7 +340,24 @@ h2 {
   text-align: center;
 }
 
-.input-field:focus {
+.input-field-small {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.1rem;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--neon-blue);
+  color: #fff;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.nickname-input {
+  width: 100%;
+}
+
+.input-field:focus, .input-field-small:focus {
   outline: none;
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }

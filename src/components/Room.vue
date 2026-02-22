@@ -11,9 +11,13 @@
       <h1 class="ns-orbitron countdown-text glow-pulse">{{ countdown }}</h1>
     </div>
 
-    <!-- Active Game -->
     <div class="problem active-game" v-if="problem && !waiting && countdown === 0">
-      <div class="round-indicator ns-orbitron">ROUND {{ currentRound }} / {{ totalRounds }}</div>
+      <div class="round-header">
+        <div class="round-indicator ns-orbitron">ROUND {{ currentRound }} / {{ totalRounds }}</div>
+        <div class="timer ns-orbitron" :class="{ 'timer-low': timeLeft <= 5 }">
+          TIME: {{ timeLeft }}s
+        </div>
+      </div>
       <h2 class="problem-title">Mission: {{ problem.name }}</h2>
       <draggable
         :animation="200"
@@ -52,8 +56,13 @@
             {{ index + 1 }}
           </div>
           <div class="player-info">
-            <span class="player-name">{{ user.id === myId ? 'あなた' : 'Player ' + user.id.substring(0,4) }}</span>
+            <span class="player-name" :class="{ 'player-name-goto': ($peerManager.idToName[user.id] || '').includes('後藤') }">
+              {{ user.id === myId ? ($peerManager.idToName[user.id] || 'あなた') + ' (あなた)' : ($peerManager.idToName[user.id] || 'Player ' + user.id.substring(0,4)) }}
+            </span>
             <span class="player-time ns-orbitron" v-if="!isMatchEnd">{{ (user.time / 1000).toFixed(2) }}s</span>
+          </div>
+          <div class="mistake-info" v-if="!isMatchEnd && user.mistakeCount > 0">
+            💀 MISTAKES: {{ user.mistakeCount }}
           </div>
           <div class="scores ns-orbitron">
             <div class="round-score" v-if="!isMatchEnd">+{{ user.roundScore }} pts</div>
@@ -107,6 +116,10 @@ export default {
       mySubmitData: null,
       mistakeCount: 0,
       
+      // Timer State
+      timeLeft: 30,
+      timerInterval: null,
+      
       // Host State
       commitSeeds: {}, 
       revealSeeds: {}, 
@@ -142,6 +155,8 @@ export default {
       this.mySubmitData = null;
       this.hasSubmitted = false;
       this.mistakeCount = 0;
+      this.timeLeft = 30;
+      if (this.timerInterval) clearInterval(this.timerInterval);
       this.problem = null;
       this.result = null;
       
@@ -266,17 +281,38 @@ export default {
         if (this.countdown <= 0) {
           clearInterval(interval);
           this.startTime = Date.now();
+          this.startTimer();
         }
       }, 1000);
     },
 
-    submit() {
+    startTimer() {
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      this.timerInterval = setInterval(() => {
+        this.timeLeft--;
+        if (this.timeLeft <= 0) {
+          clearInterval(this.timerInterval);
+          this.timeLeft = 0;
+          if (!this.hasSubmitted) {
+            this.forceSubmit();
+          }
+        }
+      }, 1000);
+    },
+
+    forceSubmit() {
+      // Penalty for timeout
+      this.mistakeCount += 5; 
+      this.submit(true);
+    },
+
+    submit(isForce = false) {
       if (this.hasSubmitted) return;
       
       const correctStr = this.problem.correctOrder.join("|");
       const answerStr = this.problem.elements.join("|");
       
-      if (answerStr !== correctStr) {
+      if (!isForce && answerStr !== correctStr) {
         this.mistakeCount++;
         this.$notify({
           group: 'foo',
@@ -287,14 +323,13 @@ export default {
         return;
       }
 
+      if (this.timerInterval) clearInterval(this.timerInterval);
       this.hasSubmitted = true;
       const timeMs = Date.now() - this.startTime;
       
       this.mySubmitData = { time: timeMs, answer: answerStr, mistakeCount: this.mistakeCount };
       const hash = this.$peerManager.hash(JSON.stringify(this.mySubmitData));
       
-      // Removed waiting = true; as per user request to stay on screen
-      // this.waiting = true;
       this.$peerManager.sendToHost({ type: "SUBMIT_COMMIT", hash });
     },
 
@@ -419,13 +454,40 @@ export default {
   max-width: 600px;
 }
 
+.round-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
 .round-indicator {
   color: var(--neon-blue);
   font-size: 1.2rem;
-  margin-bottom: 10px;
   letter-spacing: 2px;
 }
 
+.timer {
+  font-size: 1.5rem;
+  color: var(--neon-green);
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+
+.timer-low {
+  color: var(--neon-pink);
+  text-shadow: 0 0 15px rgba(244, 114, 182, 0.6);
+  animation: pulse 0.5s infinite;
+}
+
+.mistake-info {
+  grid-column: 2;
+  grid-row: 3;
+  font-size: 0.8rem;
+  color: var(--neon-pink);
+  font-weight: bold;
+  letter-spacing: 1px;
+}
 .problem-title {
   font-size: 2rem;
   color: #fff;
@@ -632,5 +694,10 @@ export default {
 .btn-secondary:hover {
   background: rgba(255,255,255,0.1);
   color: #fff;
+}
+
+.player-name-goto {
+  color: var(--neon-pink) !important;
+  text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
 }
 </style>

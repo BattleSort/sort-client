@@ -55,20 +55,21 @@
             <span v-if="isMatchEnd && index === 0">👑 </span>
             {{ index + 1 }}
           </div>
-          <div class="player-info">
             <span class="player-name" :class="{ 'player-name-goto': ($peerManager.idToName[user.id] || '').includes('後藤') }">
               {{ user.id === myId ? ($peerManager.idToName[user.id] || 'あなた') + ' (あなた)' : ($peerManager.idToName[user.id] || 'Player ' + user.id.substring(0,4)) }}
             </span>
             <span class="player-time ns-orbitron" v-if="!isMatchEnd">{{ (user.time / 1000).toFixed(2) }}s</span>
           </div>
-          <div class="mistake-info" v-if="!isMatchEnd && user.mistakeCount > 0">
-            💀 MISTAKES: {{ user.mistakeCount }}
+          <div class="mistake-info" v-if="!isMatchEnd || isMatchEnd">
+            <span :class="{ 'glow-pink-text': ($peerManager.idToName[user.id] || '').includes('後藤') }">
+              誤答: {{ isMatchEnd ? user.totalMistakes : user.mistakeCount }}回
+            </span>
           </div>
           <div class="scores ns-orbitron">
             <div class="round-score" v-if="!isMatchEnd">+{{ user.roundScore }} pts</div>
             <div class="total-score">{{ user.totalScore }} PTS</div>
           </div>
-          <div class="player-answer" v-if="!isMatchEnd">{{ user.answer.replace(/\|/g, ' ❯ ') }}</div>
+          <div class="player-answer" v-if="!isMatchEnd">{{ user.answer }}</div>
         </div>
       </div>
       
@@ -244,7 +245,8 @@ export default {
         // Output result and update cumulative state
         this.result = data.result;
         data.result.forEach(r => {
-          this.cumulativeScores[r.id] = r.totalScore;
+          this.cumulativeScores[r.id].score = r.totalScore;
+          this.cumulativeScores[r.id].mistakes = r.totalMistakes || this.cumulativeScores[r.id].mistakes || 0;
         });
 
         if (this.currentRound < this.totalRounds) {
@@ -364,8 +366,10 @@ export default {
         s.roundScore = pts;
         
         // Update total
-        this.cumulativeScores[s.id] += pts;
-        s.totalScore = this.cumulativeScores[s.id];
+        this.cumulativeScores[s.id].score += pts;
+        this.cumulativeScores[s.id].mistakes += s.mistakeCount;
+        s.totalScore = this.cumulativeScores[s.id].score;
+        s.totalMistakes = this.cumulativeScores[s.id].mistakes;
       });
 
       this.$peerManager.broadcast({ type: "ROUND_END", result: roundScores });
@@ -378,7 +382,8 @@ export default {
       const finalScores = Object.keys(this.cumulativeScores)
         .map(id => ({
           id,
-          totalScore: this.cumulativeScores[id]
+          totalScore: this.cumulativeScores[id].score,
+          totalMistakes: this.cumulativeScores[id].mistakes
         }))
         .sort((a, b) => b.totalScore - a.totalScore); // Descending for final rank
 
@@ -483,10 +488,15 @@ export default {
 .mistake-info {
   grid-column: 2;
   grid-row: 3;
-  font-size: 0.8rem;
-  color: var(--neon-pink);
+  font-size: 0.9rem;
+  color: var(--text-muted);
   font-weight: bold;
   letter-spacing: 1px;
+}
+
+.glow-pink-text {
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(244, 114, 182, 0.8);
 }
 .problem-title {
   font-size: 2rem;

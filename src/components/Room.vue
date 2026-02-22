@@ -17,6 +17,9 @@
         <div class="timer ns-orbitron" :class="{ 'timer-low': timeLeft <= 5 }">
           TIME: {{ timeLeft }}s
         </div>
+        <div class="play-mistakes ns-orbitron">
+          誤答: {{ mistakeCount }}回
+        </div>
       </div>
       <h2 class="problem-title">Mission: {{ problem.name }}</h2>
       <draggable
@@ -55,13 +58,14 @@
             <span v-if="isMatchEnd && index === 0">👑 </span>
             {{ index + 1 }}
           </div>
-            <span class="player-name" :class="{ 'player-name-goto': ($peerManager.idToName[user.id] || '').includes('後藤') }">
+          <div class="player-info">
+            <span class="player-name">
               {{ user.id === myId ? ($peerManager.idToName[user.id] || 'あなた') + ' (あなた)' : ($peerManager.idToName[user.id] || 'Player ' + user.id.substring(0,4)) }}
             </span>
             <span class="player-time ns-orbitron" v-if="!isMatchEnd">{{ (user.time / 1000).toFixed(2) }}s</span>
           </div>
           <div class="mistake-info" v-if="!isMatchEnd || isMatchEnd">
-            <span :class="{ 'glow-pink-text': ($peerManager.idToName[user.id] || '').includes('後藤') }">
+            <span>
               誤答: {{ isMatchEnd ? user.totalMistakes : user.mistakeCount }}回
             </span>
           </div>
@@ -135,7 +139,7 @@ export default {
     }
 
     this.$peerManager.players.forEach(p => {
-      this.$set(this.cumulativeScores, p, 0);
+      this.$set(this.cumulativeScores, p, { score: 0, mistakes: 0 });
     });
 
     this.$peerManager.on("message", this.processMessage);
@@ -485,6 +489,12 @@ export default {
   animation: pulse 0.5s infinite;
 }
 
+.play-mistakes {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-weight: bold;
+}
+
 .mistake-info {
   grid-column: 2;
   grid-row: 3;
@@ -492,11 +502,6 @@ export default {
   color: var(--text-muted);
   font-weight: bold;
   letter-spacing: 1px;
-}
-
-.glow-pink-text {
-  color: var(--neon-pink);
-  text-shadow: 0 0 10px rgba(244, 114, 182, 0.8);
 }
 .problem-title {
   font-size: 2rem;
@@ -704,10 +709,5 @@ export default {
 .btn-secondary:hover {
   background: rgba(255,255,255,0.1);
   color: #fff;
-}
-
-.player-name-goto {
-  color: var(--neon-pink) !important;
-  text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
 }
 </style>
